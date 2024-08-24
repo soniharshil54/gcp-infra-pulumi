@@ -1,0 +1,10 @@
+name: gcp-pulumi-infra-gotham
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+description: gcp cloud infra for a gcp-pulumi-infra-gotham
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: gcp-typescript

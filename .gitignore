@@ -1,0 +1,6 @@
+/bin/
+/node_modules/
+.env
+/google-creds/*
+!/google-creds/.gitkeep
+.DS_Store
