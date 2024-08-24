@@ -20,6 +20,7 @@ import { createAllowHttpFirewallRule, createAllowLbToInstanceFirewallRule } from
 import { createAutoscaler } from "./src/compute/autoscaler";
 import { createLoadBalancer } from "./src/compute/loadBalancer";
 import { createBucket } from "./src/storage/bucket";
+import { createJenkinsInstance } from "./src/jenkins/jenkinsInstance";  // Import Jenkins creation function
 // import { createSecurityPolicy } from "./src/network/armor";
 
 const resourceName = (baseName: string) => `${project}-${stackName}-${baseName}`;
@@ -45,6 +46,12 @@ const loadBalancer = createLoadBalancer(resourceName("load-balancer"), instanceG
 
 export const loadBalancerIp = loadBalancer.loadBalancerIp;
 
+// Create Jenkins Instance
+const jenkinsInstance = createJenkinsInstance(resourceName("jenkins-instance"), "us-central1-a");
 
 // Create Storage Bucket
 createBucket(resourceName("assets-bucket"));
+
+export const instanceGroupName = instanceGroup.name;
+export const instanceTemplateName = instanceTemplate.name;
+export const pulumiStackName = stackName;
