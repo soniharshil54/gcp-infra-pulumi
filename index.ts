@@ -55,3 +55,4 @@ createBucket(resourceName("assets-bucket"));
 export const instanceGroupName = instanceGroup.name;
 export const instanceTemplateName = instanceTemplate.name;
 export const pulumiStackName = stackName;
+export const jenkinsInstancePublicIp = jenkinsInstance.networkInterfaces.apply(ni => ni[0].accessConfigs![0].natIp);
