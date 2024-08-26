@@ -84,6 +84,8 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             sudo systemctl enable jenkins
             echo "Jenkins service started and enabled."
 
+            sleep 60
+
             # Wait for Jenkins to fully start
             echo "Waiting for Jenkins to fully start..."
             while ! curl -s http://localhost:8080 >/dev/null; do
@@ -152,7 +154,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
 
             # Download the job configuration (replace with your URL)
             echo "Downloading the Jenkins job configuration..."
-            curl -L -o /tmp/jenkins-job-config.xml https://raw.githubusercontent.com/soniharshil54/remote-files-fieasta/main/jenkins-job-config.xml
+            curl -L -o /tmp/jenkins-job-config.xml https://raw.githubusercontent.com/soniharshil54/remote-files-fieasta/main/jenkins-job-config-v6.xml
 
             # Ensure the job configuration file is downloaded correctly
             if [ ! -f "/tmp/jenkins-job-config.xml" ]; then
@@ -163,7 +165,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
 
             # Create Jenkins job using the Jenkins CLI with default admin credentials
             echo "Creating Jenkins job..."
-            java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job your-nodejs-job < /tmp/jenkins-job-config.xml || { echo "Failed to create Jenkins job"; exit 1; }
+            java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-deployment-job < /tmp/jenkins-job-config.xml || { echo "Failed to create Jenkins job"; exit 1; }
             echo "Jenkins job created successfully."
 
             echo "Jenkins setup complete"
