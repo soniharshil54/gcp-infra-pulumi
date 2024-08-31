@@ -2,7 +2,7 @@ import * as gcp from "@pulumi/gcp";
 import { gcpProvider } from "../config/provider";
 const { NODE_SERVER_PORT } = process.env;
 
-export function createLoadBalancer(name: string, instanceGroup: gcp.compute.InstanceGroupManager) {
+export function createLoadBalancer(name: string, instanceGroup: gcp.compute.RegionInstanceGroupManager) {
     // Create a global static IP address for the load balancer
     const globalAddress = new gcp.compute.GlobalAddress(`${name}-address`, {}, { provider: gcpProvider });
 

@@ -8,9 +8,14 @@ dotenv.config();
 const project = process.env.GOOGLE_PROJECT;
 const region = process.env.GOOGLE_REGION;
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+const githubToken = process.env.GITHUB_TOKEN;
 
 if (!project || !region || !credentialsPath) {
     throw new Error("Missing required environment variables: GOOGLE_PROJECT, GOOGLE_REGION, GOOGLE_APPLICATION_CREDENTIALS");
+}
+
+if (!githubToken) {
+    throw new Error("Missing required environment variable: GITHUB_TOKEN");
 }
 
 const stackName = getStack();
@@ -22,8 +27,12 @@ import { createLoadBalancer } from "./src/compute/loadBalancer";
 import { createBucket } from "./src/storage/bucket";
 import { createJenkinsInstance } from "./src/jenkins/jenkinsInstance";  // Import Jenkins creation function
 // import { createSecurityPolicy } from "./src/network/armor";
+import { createGithubTokenSecret } from "./src/secrets/githubSecret";
 
 const resourceName = (baseName: string) => `${project}-${stackName}-${baseName}`;
+
+// Create the GitHub token secret in Secret Manager
+const githubSecretName = createGithubTokenSecret(resourceName("github-token"), githubToken);
 
 // Create Firewall Rules
 const allowHttpFirewall = createAllowHttpFirewallRule(resourceName("allow-http"));
@@ -36,10 +45,10 @@ const allowLbToInstanceFirewall = createAllowLbToInstanceFirewallRule(resourceNa
 const instanceTemplate = createInstanceTemplate(resourceName("instance-template"));
 
 // Create Instance Group
-const instanceGroup = createInstanceGroup(resourceName("instance-group"), instanceTemplate, "us-central1-a", 1);
+const instanceGroup = createInstanceGroup(resourceName("instance-group"), instanceTemplate, "us-central1", 3);
 
 // Set up Autoscaling
-createAutoscaler(resourceName("autoscaler"), instanceGroup, "us-central1-a");
+createAutoscaler(resourceName("autoscaler"), instanceGroup, "us-central1");
 
 // Set up Load Balancer
 const loadBalancer = createLoadBalancer(resourceName("load-balancer"), instanceGroup);
