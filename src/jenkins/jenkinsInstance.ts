@@ -75,7 +75,9 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             # Update and install necessary packages
             echo "Updating apt-get and installing necessary packages..."
             sudo apt-get update
-            sudo apt-get install -y openjdk-11-jdk jq jenkins
+
+            # Install OpenJDK 17 instead of OpenJDK 11
+            sudo apt-get install -y openjdk-17-jdk jq jenkins
             echo "Packages installed."
 
             # Start Jenkins service
