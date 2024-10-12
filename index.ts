@@ -1,17 +1,21 @@
 import * as dotenv from "dotenv";
-import { getStack, output } from "@pulumi/pulumi";
+import { Config, getStack, output } from "@pulumi/pulumi";
 
 // Load environment variables from .env file
 dotenv.config();
 
 // Ensure the environment variables are set
-const project = process.env.GOOGLE_PROJECT;
-const region = process.env.GOOGLE_REGION;
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 const githubToken = process.env.GITHUB_TOKEN;
 
-if (!project || !region || !credentialsPath) {
-    throw new Error("Missing required environment variables: GOOGLE_PROJECT, GOOGLE_REGION, GOOGLE_APPLICATION_CREDENTIALS");
+// Create Config objects for each namespace
+const gcpConfig = new Config("gcp");
+
+// Constants from Pulumi config
+const project = gcpConfig.require("project");
+
+if (!credentialsPath) {
+    throw new Error("Missing required environment variable: GOOGLE_APPLICATION_CREDENTIALS");
 }
 
 if (!githubToken) {

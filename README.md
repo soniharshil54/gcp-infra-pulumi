@@ -40,8 +40,7 @@ Install project dependencies:
 Create a `.env` file in the project root and add your configurations:
 
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/service-account-file.json
-GOOGLE_PROJECT=your-gcp-project-id
-GOOGLE_REGION=us-central1
+GITHUB_TOKEN=
 
 ### Run Pulumi Commands
 
@@ -79,8 +78,7 @@ To destroy the stack and all associated resources, run:
 ## Environment Variables
 
 - `GOOGLE_APPLICATION_CREDENTIALS`: Path to your GCP service account JSON key file.
-- `GOOGLE_PROJECT`: Your GCP project ID.
-- `GOOGLE_REGION`: The GCP region for your resources (e.g., `us-central1`).
+- `GITHUB_TOKEN`: Github access token
 
 ## Useful Links
 

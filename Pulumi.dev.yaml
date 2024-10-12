@@ -3,5 +3,6 @@ config:
   gcp:region: us-central1
   github:repoUrl: https://github.com/soniharshil54/get-client-ip-node-private.git
   github:repoName: get-client-ip-node-private
-  github:branch: master
+  github:branch: main
   gcp-pulumi-infra-gotham:nodeServerPort: "4010"
+  healthcheckPath: /v1/healthcheck

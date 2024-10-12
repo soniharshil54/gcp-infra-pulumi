@@ -4,6 +4,7 @@ import { Config } from "@pulumi/pulumi";
 
 const stackConfig = new Config();
 const NODE_SERVER_PORT = stackConfig.requireNumber("nodeServerPort");
+const HEALTHCHECK_PATH = stackConfig.require("healthcheckPath");
 
 export function createLoadBalancer(name: string, instanceGroup: gcp.compute.RegionInstanceGroupManager) {
     // Create a global static IP address for the load balancer
@@ -11,7 +12,7 @@ export function createLoadBalancer(name: string, instanceGroup: gcp.compute.Regi
 
     // Define a health check for the instances on port
     const healthCheck = new gcp.compute.HttpHealthCheck(`${name}-health-check`, {
-        requestPath: "/v1/healthcheck",  // Replace with the actual health check path of your Node.js server
+        requestPath: HEALTHCHECK_PATH,  // Replace with the actual health check path of your Node.js server
         port: NODE_SERVER_PORT as any,  // Ensure the health check uses port
     }, { provider: gcpProvider });
 
