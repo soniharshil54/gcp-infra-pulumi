@@ -1,7 +1,9 @@
 import * as gcp from "@pulumi/gcp";
 import { gcpProvider } from "../config/provider";
+import { Config } from "@pulumi/pulumi";
 
-const { NODE_SERVER_PORT } = process.env;
+const stackConfig = new Config();
+const NODE_SERVER_PORT = stackConfig.requireNumber("nodeServerPort");
 
 // Firewall rule to allow HTTP access from the internet to the load balancer
 export function createAllowHttpFirewallRule(name: string) {

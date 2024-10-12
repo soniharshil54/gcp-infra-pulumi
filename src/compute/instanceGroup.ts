@@ -1,15 +1,24 @@
 import * as gcp from "@pulumi/gcp";
 import { gcpProvider } from "../config/provider";
-import { Output } from "@pulumi/pulumi"; // Add this line
+import { Output, Config, getStack } from "@pulumi/pulumi";
 
-import { getStack } from "@pulumi/pulumi";
 const stackName = getStack();
 
-const { GITHUB_BRANCH, NODE_SERVER_PORT, GITHUB_REPO_URL, GITHUB_REPO_NAME, GOOGLE_PROJECT: project } = process.env;
+// Create Config objects for each namespace
+const gcpConfig = new Config("gcp");
+const githubConfig = new Config("github");
+const stackConfig = new Config();
+
+// Constants from Pulumi config
+const GOOGLE_PROJECT = gcpConfig.require("project");
+const GITHUB_REPO_URL = githubConfig.require("repoUrl");
+const GITHUB_REPO_NAME = githubConfig.require("repoName");
+const GITHUB_BRANCH = githubConfig.require("branch");
+const NODE_SERVER_PORT = stackConfig.requireNumber("nodeServerPort");
 
 export function createInstanceTemplate(name: string) {
     // Create a service account to be used by the instances
-    const secretId = `${project}-${stackName}-github-token`;
+    const secretId = `${GOOGLE_PROJECT}-${stackName}-github-token`;
 
     const accountId = `${name.slice(0, 24)}-sa`;
     const serviceAccount = new gcp.serviceaccount.Account(`${name}-sa`, {
@@ -99,7 +108,7 @@ export function createInstanceGroup(name: string, instanceTemplate: gcp.compute.
         targetSize: size,
         namedPorts: [{
             name: `http-${NODE_SERVER_PORT}`,  // This name must match the portName in the BackendService
-            port: NODE_SERVER_PORT as any,
+            port: NODE_SERVER_PORT,
         }],
         updatePolicy: {
             type: "PROACTIVE",

@@ -1,6 +1,9 @@
 import * as gcp from "@pulumi/gcp";
 import { gcpProvider } from "../config/provider";
-const { NODE_SERVER_PORT } = process.env;
+import { Config } from "@pulumi/pulumi";
+
+const stackConfig = new Config();
+const NODE_SERVER_PORT = stackConfig.requireNumber("nodeServerPort");
 
 export function createLoadBalancer(name: string, instanceGroup: gcp.compute.RegionInstanceGroupManager) {
     // Create a global static IP address for the load balancer

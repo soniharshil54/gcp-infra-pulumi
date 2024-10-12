@@ -19,6 +19,7 @@ if (!githubToken) {
 }
 
 const stackName = getStack();
+console.log(`Stack name: ${stackName}`);
 
 import { createInstanceTemplate, createInstanceGroup } from "./src/compute/instanceGroup";
 import { createAllowHttpFirewallRule, createAllowLbToInstanceFirewallRule } from "./src/network/firewallRules";
