@@ -1,5 +1,17 @@
+import * as fs from "fs";
 import * as gcp from "@pulumi/gcp";
+import * as path from "path";
 import { gcpProvider } from "../config/provider";
+
+const installDockerScriptPath = path.join(__dirname, "../config/scripts/docker-setup.sh");
+const installDockerScript = fs.readFileSync(installDockerScriptPath, "utf-8");
+
+// Read Jenkins job configuration from file
+const centralServerJobConfigPath = path.join(__dirname, "../config/jenkins/central-server-job-config.xml");
+const venueServerJobConfigPath = path.join(__dirname, "../config/jenkins/central-server-job-config.xml");
+
+const centralServerJobConfig = fs.readFileSync(centralServerJobConfigPath, "utf-8");
+const venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
 
 export function createJenkinsInstance(name: string, zone: string): gcp.compute.Instance {
     const jenkinsTag = "jenkins";
@@ -75,6 +87,12 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             # Update and install necessary packages
             echo "Updating apt-get and installing necessary packages..."
             sudo apt-get update
+
+            # Docker and Docker Compose installation
+            echo "Installing Docker and Docker Compose..."
+            echo '${installDockerScript}' > /tmp/install-docker.sh
+            chmod +x /tmp/install-docker.sh
+            /tmp/install-docker.sh
 
             # Install OpenJDK 17 instead of OpenJDK 11
             sudo apt-get install -y openjdk-17-jdk jq jenkins
@@ -165,10 +183,22 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             fi
             echo "Jenkins job configuration downloaded."
 
-            # Create Jenkins job using the Jenkins CLI with default admin credentials
-            echo "Creating Jenkins job..."
-            java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-deployment-job < /tmp/jenkins-job-config.xml || { echo "Failed to create Jenkins job"; exit 1; }
-            echo "Jenkins job created successfully."
+            # Create Jenkins central server job using the Jenkins CLI with default admin credentials
+            echo "Creating central server Jenkins job..."
+            echo '${centralServerJobConfig}' > /tmp/central-server-job-config.xml
+            java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-central-server-deployment-job < /tmp/central-server-job-config.xml || { echo "Failed to create Jenkins central server job"; exit 1; }
+            echo "Jenkins central server job created successfully."
+
+            # Create Jenkins venue server job using the Jenkins CLI with default admin credentials
+            echo "Creating venue server Jenkins job..."
+            echo '${venueServerJobConfig}' > /tmp/venue-server-job-config.xml
+            java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-venue-server-deployment-job < /tmp/venue-server-job-config.xml || { echo "Failed to create Jenkins venue server job"; exit 1; }
+            echo "Jenkins venue server job created successfully."
+
+            # Save the password to a file for later retrieval
+            echo $ADMIN_PASSWORD > /var/lib/jenkins/admin-password.txt
+            sudo chmod 600 /var/lib/jenkins/admin-password.txt
+            echo "Admin password saved to /var/lib/jenkins/admin-password.txt"
 
             echo "Jenkins setup complete"
         } &>> /var/log/jenkins-install.log
