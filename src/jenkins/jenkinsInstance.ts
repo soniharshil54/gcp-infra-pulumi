@@ -2,6 +2,12 @@ import * as fs from "fs";
 import * as gcp from "@pulumi/gcp";
 import * as path from "path";
 import { gcpProvider } from "../config/provider";
+import { Config, getStack } from "@pulumi/pulumi";
+
+const stackName = getStack();
+
+// Create Config objects for each namespace
+const gcpConfig = new Config("gcp");
 
 const installDockerScriptPath = path.join(__dirname, "../config/scripts/docker-setup.sh");
 const installDockerScript = fs.readFileSync(installDockerScriptPath, "utf-8");
@@ -12,6 +18,13 @@ const venueServerJobConfigPath = path.join(__dirname, "../config/jenkins/central
 
 const centralServerJobConfig = fs.readFileSync(centralServerJobConfigPath, "utf-8");
 const venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
+
+const githubCredentialsConfigPath = path.join(__dirname, "../config/jenkins/github-credentials.xml");
+const githubCredentialsConfig = fs.readFileSync(githubCredentialsConfigPath, "utf-8");
+
+const GOOGLE_PROJECT = gcpConfig.require("project");
+
+const secretId = `${GOOGLE_PROJECT}-${stackName}-github-token`;
 
 export function createJenkinsInstance(name: string, zone: string): gcp.compute.Instance {
     const jenkinsTag = "jenkins";
@@ -27,6 +40,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
         "roles/compute.admin",
         "roles/storage.admin",
         "roles/iam.serviceAccountUser",
+        "roles/secretmanager.secretAccessor",
     ];
 
     roles.forEach(role => {
@@ -55,7 +69,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
     }, { provider: gcpProvider });
 
     const instance = new gcp.compute.Instance(name, {
-        machineType: "n1-standard-1",
+        machineType: "n1-standard-2",
         zone: zone,
         bootDisk: {
             initializeParams: {
@@ -172,26 +186,33 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             done
             echo "Jenkins is up after plugin installation."
 
-            # Download the job configuration (replace with your URL)
-            echo "Downloading the Jenkins job configuration..."
-            curl -L -o /tmp/jenkins-job-config.xml https://raw.githubusercontent.com/soniharshil54/remote-files-fieasta/main/jenkins-job-config-v6.xml
+            # Define the GitHub credentials ID
+            GITHUB_CREDENTIALS_ID="github-token-v1"
 
-            # Ensure the job configuration file is downloaded correctly
-            if [ ! -f "/tmp/jenkins-job-config.xml" ]; then
-                echo "Jenkins job configuration not found!"
-                exit 1
-            fi
-            echo "Jenkins job configuration downloaded."
+            # Fetch GitHub token from Google Secret Manager
+            echo "Fetching GitHub token from Secret Manager: ${secretId}"
+            GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${secretId}")
+            githubToken=$(gcloud secrets versions access latest --secret="${secretId}")
+            echo "GitHub token: $GITHUB_TOKEN"
+            echo '${githubCredentialsConfig}' > /tmp/github-credentials.xml
+            sed -i 's|__GITHUB_TOKEN__|'"$GITHUB_TOKEN"'|g' /tmp/github-credentials.xml
+
+            # Create credentials using the external XML file
+            echo "Creating GitHub credentials using external XML file..."
+            java -jar $JENKINS_CLI -s http://localhost:8080/ -auth admin:$ADMIN_PASSWORD create-credentials-by-xml system::system::jenkins _ < /tmp/github-credentials.xml
+            echo "GitHub credentials created successfully."
 
             # Create Jenkins central server job using the Jenkins CLI with default admin credentials
             echo "Creating central server Jenkins job..."
             echo '${centralServerJobConfig}' > /tmp/central-server-job-config.xml
+            sed -i 's|__GITHUB_CREDENTIALS_ID__|'"$GITHUB_CREDENTIALS_ID"'|g' /tmp/central-server-job-config.xml
             java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-central-server-deployment-job < /tmp/central-server-job-config.xml || { echo "Failed to create Jenkins central server job"; exit 1; }
             echo "Jenkins central server job created successfully."
 
             # Create Jenkins venue server job using the Jenkins CLI with default admin credentials
             echo "Creating venue server Jenkins job..."
             echo '${venueServerJobConfig}' > /tmp/venue-server-job-config.xml
+            sed -i 's|__GITHUB_CREDENTIALS_ID__|'"$GITHUB_CREDENTIALS_ID"'|g' /tmp/venue-server-job-config.xml
             java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-venue-server-deployment-job < /tmp/venue-server-job-config.xml || { echo "Failed to create Jenkins venue server job"; exit 1; }
             echo "Jenkins venue server job created successfully."
 
