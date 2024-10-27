@@ -3,6 +3,7 @@ import * as gcp from "@pulumi/gcp";
 import * as path from "path";
 import { gcpProvider } from "../config/provider";
 import { GCP_CONFIG, STACK_NAME, CENTRAL_SERVER, VENUE_SERVER, JENKINS_CONFIG } from "../config/constant";
+import { escapeXml } from "../utils";
 
 const installDockerScriptPath = path.join(__dirname, "../config/scripts/docker-setup.sh");
 const installDockerScript = fs.readFileSync(installDockerScriptPath, "utf-8");
@@ -11,7 +12,7 @@ const installDockerScript = fs.readFileSync(installDockerScriptPath, "utf-8");
 const centralServerJobConfigPath = path.join(__dirname, "../config/jenkins/central-server-job-config.xml");
 const venueServerJobConfigPath = path.join(__dirname, "../config/jenkins/venue-server-job-config.xml");
 
-const centralServerJobConfig = fs.readFileSync(centralServerJobConfigPath, "utf-8");
+let centralServerJobConfig = fs.readFileSync(centralServerJobConfigPath, "utf-8");
 const venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
 
 const githubCredentialsConfigPath = path.join(__dirname, "../config/jenkins/github-credentials.xml");
@@ -19,6 +20,10 @@ const githubCredentialsConfig = fs.readFileSync(githubCredentialsConfigPath, "ut
 
 const createUserGroovyScriptPath = path.join(__dirname, "../config/jenkins/create-user.groovy");
 let createUserGroovyScript = fs.readFileSync(createUserGroovyScriptPath, "utf-8");
+
+const centralServerJenkinsfilePath = path.join(__dirname, "../config/jenkins/central-server.Jenkinsfile");
+const centralServerJenkinsfileContent = escapeXml(fs.readFileSync(centralServerJenkinsfilePath, "utf-8"));
+centralServerJobConfig = centralServerJobConfig.replace(/__JENKINSFILE_CONTENT__/g, centralServerJenkinsfileContent);
 
 // Define the new Jenkins username
 const newJenkinsUsername = JENKINS_CONFIG.USERNAME;
@@ -29,6 +34,11 @@ createUserGroovyScript = createUserGroovyScript
 
 const secretId = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-github-token`;
 const jenkinsSecretId = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-jenkins-password`;
+
+// Read the setup-github-webhook.sh script
+const setupGithubWebhookScriptPath = path.join(__dirname, "../config/scripts/setup-github-webhook.sh");
+const setupGithubWebhookScript = fs.readFileSync(setupGithubWebhookScriptPath, "utf-8");
+const setupGithubWebhookScriptBase64 = Buffer.from(setupGithubWebhookScript).toString('base64');
 
 export function createJenkinsInstance(name: string, zone: string): gcp.compute.Instance {
     const jenkinsTag = "jenkins";
@@ -240,6 +250,21 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             echo $ADMIN_PASSWORD > /var/lib/jenkins/admin-password.txt
             sudo chmod 600 /var/lib/jenkins/admin-password.txt
             echo "Admin password saved to /var/lib/jenkins/admin-password.txt"
+
+            # Write setup-github-webhook.sh to /tmp using base64 decoding
+            echo '${setupGithubWebhookScriptBase64}' | base64 -d > /tmp/setup-github-webhook.sh
+            chmod +x /tmp/setup-github-webhook.sh
+
+
+            # Fetch GitHub token and repository details
+            CENTRAL_SERVER_REPO="${CENTRAL_SERVER.GITHUB.REPO_OWNER}/${CENTRAL_SERVER.GITHUB.REPO_NAME}"
+            VENUE_SERVER_REPO="${VENUE_SERVER.GITHUB.REPO_OWNER}/${VENUE_SERVER.GITHUB.REPO_NAME}"
+            WEBHOOK_URL="http://$(curl -s http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H 'Metadata-Flavor: Google'):8080/github-webhook/"
+            echo "Webhook URL: $WEBHOOK_URL"
+
+            # Execute the webhook setup script for each repository
+            /tmp/setup-github-webhook.sh "$CENTRAL_SERVER_REPO" "$GITHUB_TOKEN" "$WEBHOOK_URL"
+            /tmp/setup-github-webhook.sh "$VENUE_SERVER_REPO" "$GITHUB_TOKEN" "$WEBHOOK_URL"
 
             # Restart Jenkins to apply configuration changes
             sleep 60

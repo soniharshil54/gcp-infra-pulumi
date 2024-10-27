@@ -11,6 +11,7 @@ interface GithubConfig {
   REPO_URL: string;
   REPO_NAME: string;
   BRANCH: string;
+  REPO_OWNER?: string;
 }
 
 interface CentralServerConfig {
@@ -41,6 +42,7 @@ export const CENTRAL_SERVER: CentralServerConfig = {
     REPO_URL: centralServerConfig.require("githubRepoUrl"),
     REPO_NAME: centralServerConfig.require("githubRepoName"),
     BRANCH: centralServerConfig.require("githubBranch"),
+    REPO_OWNER: centralServerConfig.require("githubRepoOwner"),
   },
   NODE_SERVER_PORT: centralServerConfig.requireNumber("nodeServerPort"),
   HEALTHCHECK_PATH: centralServerConfig.require("healthcheckPath"),
@@ -52,6 +54,7 @@ export const VENUE_SERVER: VenueServerConfig = {
     REPO_URL: venueServerConfig.require("githubRepoUrl"),
     REPO_NAME: venueServerConfig.require("githubRepoName"),
     BRANCH: venueServerConfig.require("githubBranch"),
+    REPO_OWNER: venueServerConfig.require("githubRepoOwner"),
   },
 };
 

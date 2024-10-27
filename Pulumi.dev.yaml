@@ -7,9 +7,11 @@ config:
   centralServer:githubBranch: main
   centralServer:nodeServerPort: "4010"
   centralServer:healthcheckPath: /v1/healthcheck
+  centralServer:githubRepoOwner: soniharshil54
 
   venueServer:githubRepoUrl: https://github.com/soniharshil54/phone-spam-authenticate.git
   venueServer:githubRepoName: phone-spam-authenticate
   venueServer:githubBranch: main
+  venueServer:githubRepoOwner: soniharshil54
 
   jenkins:username: harshil

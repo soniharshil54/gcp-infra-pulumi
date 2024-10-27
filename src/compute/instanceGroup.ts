@@ -87,6 +87,7 @@ export function createInstanceTemplate(name: string) {
 
 export function createInstanceGroup(name: string, instanceTemplate: gcp.compute.InstanceTemplate, region: string, size: number) {
     return new gcp.compute.RegionInstanceGroupManager(name, {
+        name: name,
         baseInstanceName: name,
         versions: [{
             instanceTemplate: instanceTemplate.selfLink,
