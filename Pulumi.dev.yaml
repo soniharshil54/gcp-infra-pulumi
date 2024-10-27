@@ -1,8 +1,13 @@
 config:
   gcp:project: gotham-433513
   gcp:region: us-central1
-  github:repoUrl: https://github.com/soniharshil54/get-client-ip-node-private.git
-  github:repoName: get-client-ip-node-private
-  github:branch: main
-  gcp-pulumi-infra-gotham:nodeServerPort: "4010"
-  healthcheckPath: /v1/healthcheck
+
+  centralServer:githubRepoUrl: https://github.com/soniharshil54/get-client-ip-node-private.git
+  centralServer:githubRepoName: get-client-ip-node-private
+  centralServer:githubBranch: main
+  centralServer:nodeServerPort: "4010"
+  centralServer:healthcheckPath: /v1/healthcheck
+
+  venueServer:githubRepoUrl: https://github.com/soniharshil54/phone-spam-authenticate.git
+  venueServer:githubRepoName: phone-spam-authenticate
+  venueServer:githubBranch: main

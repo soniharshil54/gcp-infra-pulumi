@@ -1,6 +1,6 @@
 import * as gcp from "@pulumi/gcp";
 
-export function createGithubTokenSecret(name: string, token: string) {
+export function createGithubTokenSecret(name: string, token: string, location: string) {
     // Create a new secret with automatic replication
     const secret = new gcp.secretmanager.Secret(name, {
         secretId: name,
@@ -8,7 +8,7 @@ export function createGithubTokenSecret(name: string, token: string) {
             userManaged: {
                 replicas: [
                     {
-                        location: "us-central1",
+                        location: location,
                     },
                 ],
             },

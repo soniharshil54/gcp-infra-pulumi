@@ -1,10 +1,7 @@
 import * as gcp from "@pulumi/gcp";
 import { gcpProvider } from "../config/provider";
-import { Config } from "@pulumi/pulumi";
 
-const stackConfig = new Config();
-const NODE_SERVER_PORT = stackConfig.requireNumber("nodeServerPort");
-const HEALTHCHECK_PATH = stackConfig.require("healthcheckPath");
+import { CENTRAL_SERVER } from "../config/constant";
 
 export function createLoadBalancer(name: string, instanceGroup: gcp.compute.RegionInstanceGroupManager) {
     // Create a global static IP address for the load balancer
@@ -12,8 +9,8 @@ export function createLoadBalancer(name: string, instanceGroup: gcp.compute.Regi
 
     // Define a health check for the instances on port
     const healthCheck = new gcp.compute.HttpHealthCheck(`${name}-health-check`, {
-        requestPath: HEALTHCHECK_PATH,  // Replace with the actual health check path of your Node.js server
-        port: NODE_SERVER_PORT as any,  // Ensure the health check uses port
+        requestPath: CENTRAL_SERVER.HEALTHCHECK_PATH,  // Replace with the actual health check path of your Node.js server
+        port: CENTRAL_SERVER.NODE_SERVER_PORT as any,  // Ensure the health check uses port
     }, { provider: gcpProvider });
 
     // Define the backend service using the instance group
@@ -24,7 +21,7 @@ export function createLoadBalancer(name: string, instanceGroup: gcp.compute.Regi
         healthChecks: healthCheck.id,
         loadBalancingScheme: "EXTERNAL",
         protocol: "HTTP",
-        portName: `http-${NODE_SERVER_PORT}`,  // This name must match the name in the InstanceGroup
+        portName: `http-${CENTRAL_SERVER.NODE_SERVER_PORT}`,  // This name must match the name in the InstanceGroup
     }, { provider: gcpProvider });
 
     // Create a URL map to route incoming requests to the backend service

@@ -2,12 +2,7 @@ import * as fs from "fs";
 import * as gcp from "@pulumi/gcp";
 import * as path from "path";
 import { gcpProvider } from "../config/provider";
-import { Config, getStack } from "@pulumi/pulumi";
-
-const stackName = getStack();
-
-// Create Config objects for each namespace
-const gcpConfig = new Config("gcp");
+import { GCP_CONFIG, STACK_NAME, CENTRAL_SERVER, VENUE_SERVER } from "../config/constant";
 
 const installDockerScriptPath = path.join(__dirname, "../config/scripts/docker-setup.sh");
 const installDockerScript = fs.readFileSync(installDockerScriptPath, "utf-8");
@@ -22,9 +17,7 @@ const venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
 const githubCredentialsConfigPath = path.join(__dirname, "../config/jenkins/github-credentials.xml");
 const githubCredentialsConfig = fs.readFileSync(githubCredentialsConfigPath, "utf-8");
 
-const GOOGLE_PROJECT = gcpConfig.require("project");
-
-const secretId = `${GOOGLE_PROJECT}-${stackName}-github-token`;
+const secretId = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-github-token`;
 
 export function createJenkinsInstance(name: string, zone: string): gcp.compute.Instance {
     const jenkinsTag = "jenkins";
@@ -189,6 +182,10 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             # Define the GitHub credentials ID
             GITHUB_CREDENTIALS_ID="github-token-v1"
 
+            # Define github repo urls
+            CENTRAL_SERVER_GITHUB_REPO_URL="${CENTRAL_SERVER.GITHUB.REPO_URL}"
+            VENUE_SERVER_GITHUB_REPO_URL="${VENUE_SERVER.GITHUB.REPO_URL}"
+
             # Fetch GitHub token from Google Secret Manager
             echo "Fetching GitHub token from Secret Manager: ${secretId}"
             GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${secretId}")
@@ -206,6 +203,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             echo "Creating central server Jenkins job..."
             echo '${centralServerJobConfig}' > /tmp/central-server-job-config.xml
             sed -i 's|__GITHUB_CREDENTIALS_ID__|'"$GITHUB_CREDENTIALS_ID"'|g' /tmp/central-server-job-config.xml
+            sed -i 's|__CENTRAL_SERVER_GITHUB_REPO_URL__|'"$CENTRAL_SERVER_GITHUB_REPO_URL"'|g' /tmp/central-server-job-config.xml
             java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-central-server-deployment-job < /tmp/central-server-job-config.xml || { echo "Failed to create Jenkins central server job"; exit 1; }
             echo "Jenkins central server job created successfully."
 
@@ -213,6 +211,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             echo "Creating venue server Jenkins job..."
             echo '${venueServerJobConfig}' > /tmp/venue-server-job-config.xml
             sed -i 's|__GITHUB_CREDENTIALS_ID__|'"$GITHUB_CREDENTIALS_ID"'|g' /tmp/venue-server-job-config.xml
+            sed -i 's|__VENUE_SERVER_GITHUB_REPO_URL__|'"$VENUE_SERVER_GITHUB_REPO_URL"'|g' /tmp/venue-server-job-config.xml
             java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-venue-server-deployment-job < /tmp/venue-server-job-config.xml || { echo "Failed to create Jenkins venue server job"; exit 1; }
             echo "Jenkins venue server job created successfully."
 

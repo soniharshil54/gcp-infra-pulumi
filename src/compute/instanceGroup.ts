@@ -1,24 +1,11 @@
 import * as gcp from "@pulumi/gcp";
 import { gcpProvider } from "../config/provider";
-import { Output, Config, getStack } from "@pulumi/pulumi";
 
-const stackName = getStack();
-
-// Create Config objects for each namespace
-const gcpConfig = new Config("gcp");
-const githubConfig = new Config("github");
-const stackConfig = new Config();
-
-// Constants from Pulumi config
-const GOOGLE_PROJECT = gcpConfig.require("project");
-const GITHUB_REPO_URL = githubConfig.require("repoUrl");
-const GITHUB_REPO_NAME = githubConfig.require("repoName");
-const GITHUB_BRANCH = githubConfig.require("branch");
-const NODE_SERVER_PORT = stackConfig.requireNumber("nodeServerPort");
+import { GCP_CONFIG, CENTRAL_SERVER, STACK_NAME } from "../config/constant";
 
 export function createInstanceTemplate(name: string) {
     // Create a service account to be used by the instances
-    const secretId = `${GOOGLE_PROJECT}-${stackName}-github-token`;
+    const secretId = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-github-token`;
 
     const accountId = `${name.slice(0, 24)}-sa`;
     const serviceAccount = new gcp.serviceaccount.Account(`${name}-sa`, {
@@ -28,7 +15,7 @@ export function createInstanceTemplate(name: string) {
 
     // Attach the Secret Manager Access Role to the service account
     new gcp.projects.IAMMember(`${name}-secret-access`, {
-        project: gcp.config.project!,
+        project: GCP_CONFIG.PROJECT,
         role: "roles/secretmanager.secretAccessor",
         member: serviceAccount.email.apply(email => `serviceAccount:${email}`),
     }, { provider: gcpProvider });
@@ -75,17 +62,17 @@ export function createInstanceTemplate(name: string) {
             echo "echo \$GITHUB_TOKEN" > $GIT_ASKPASS
             chmod +x $GIT_ASKPASS
 
-            echo "Github Repo URL: ${GITHUB_REPO_URL}"
-            echo "Github Branch: ${GITHUB_BRANCH}"
-            echo "Github Repo Name: ${GITHUB_REPO_NAME}"
+            echo "Github Repo URL: ${CENTRAL_SERVER.GITHUB.REPO_URL}"
+            echo "Github Branch: ${CENTRAL_SERVER.GITHUB.BRANCH}"
+            echo "Github Repo Name: ${CENTRAL_SERVER.GITHUB.REPO_NAME}"
             # Clone the repository
-            git clone ${GITHUB_REPO_URL} /home/ubuntu/${GITHUB_REPO_NAME} || exit 1
-            cd /home/ubuntu/${GITHUB_REPO_NAME}
+            git clone ${CENTRAL_SERVER.GITHUB.REPO_URL} /home/ubuntu/${CENTRAL_SERVER.GITHUB.REPO_NAME} || exit 1
+            cd /home/ubuntu/${CENTRAL_SERVER.GITHUB.REPO_NAME}
             pwd
             ls
             
             # Switch to the branch
-            git checkout ${GITHUB_BRANCH}
+            git checkout ${CENTRAL_SERVER.GITHUB.BRANCH}
             
             # Install dependencies
             npm install
@@ -107,8 +94,8 @@ export function createInstanceGroup(name: string, instanceTemplate: gcp.compute.
         region: region,
         targetSize: size,
         namedPorts: [{
-            name: `http-${NODE_SERVER_PORT}`,  // This name must match the portName in the BackendService
-            port: NODE_SERVER_PORT,
+            name: `http-${CENTRAL_SERVER.NODE_SERVER_PORT}`,  // This name must match the portName in the BackendService
+            port: CENTRAL_SERVER.NODE_SERVER_PORT,
         }],
         updatePolicy: {
             type: "PROACTIVE",
