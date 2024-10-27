@@ -79,6 +79,7 @@ To destroy the stack and all associated resources, run:
 
 - `GOOGLE_APPLICATION_CREDENTIALS`: Path to your GCP service account JSON key file.
 - `GITHUB_TOKEN`: Github access token
+- `JENKINS_PASSWORD`: password you want to set for jenkins ui (username is in Pulumi.dev.yaml)
 
 ## Useful Links
 
