@@ -2,14 +2,14 @@ import * as fs from "fs";
 import * as gcp from "@pulumi/gcp";
 import * as path from "path";
 import { gcpProvider } from "../config/provider";
-import { GCP_CONFIG, STACK_NAME, CENTRAL_SERVER, VENUE_SERVER } from "../config/constant";
+import { GCP_CONFIG, STACK_NAME, CENTRAL_SERVER, VENUE_SERVER, JENKINS_CONFIG } from "../config/constant";
 
 const installDockerScriptPath = path.join(__dirname, "../config/scripts/docker-setup.sh");
 const installDockerScript = fs.readFileSync(installDockerScriptPath, "utf-8");
 
 // Read Jenkins job configuration from file
 const centralServerJobConfigPath = path.join(__dirname, "../config/jenkins/central-server-job-config.xml");
-const venueServerJobConfigPath = path.join(__dirname, "../config/jenkins/central-server-job-config.xml");
+const venueServerJobConfigPath = path.join(__dirname, "../config/jenkins/venue-server-job-config.xml");
 
 const centralServerJobConfig = fs.readFileSync(centralServerJobConfigPath, "utf-8");
 const venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
@@ -17,7 +17,18 @@ const venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
 const githubCredentialsConfigPath = path.join(__dirname, "../config/jenkins/github-credentials.xml");
 const githubCredentialsConfig = fs.readFileSync(githubCredentialsConfigPath, "utf-8");
 
+const createUserGroovyScriptPath = path.join(__dirname, "../config/jenkins/create-user.groovy");
+let createUserGroovyScript = fs.readFileSync(createUserGroovyScriptPath, "utf-8");
+
+// Define the new Jenkins username
+const newJenkinsUsername = JENKINS_CONFIG.USERNAME;
+
+// Replace placeholders in the Groovy script
+createUserGroovyScript = createUserGroovyScript
+    .replace(/__NEW_USERNAME__/g, newJenkinsUsername);
+
 const secretId = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-github-token`;
+const jenkinsSecretId = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-jenkins-password`;
 
 export function createJenkinsInstance(name: string, zone: string): gcp.compute.Instance {
     const jenkinsTag = "jenkins";
@@ -62,7 +73,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
     }, { provider: gcpProvider });
 
     const instance = new gcp.compute.Instance(name, {
-        machineType: "n1-standard-2",
+        machineType: "n1-standard-1",
         zone: zone,
         bootDisk: {
             initializeParams: {
@@ -189,7 +200,6 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             # Fetch GitHub token from Google Secret Manager
             echo "Fetching GitHub token from Secret Manager: ${secretId}"
             GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${secretId}")
-            githubToken=$(gcloud secrets versions access latest --secret="${secretId}")
             echo "GitHub token: $GITHUB_TOKEN"
             echo '${githubCredentialsConfig}' > /tmp/github-credentials.xml
             sed -i 's|__GITHUB_TOKEN__|'"$GITHUB_TOKEN"'|g' /tmp/github-credentials.xml
@@ -215,10 +225,25 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             java -jar $JENKINS_CLI -s http://localhost:8080 -auth admin:$ADMIN_PASSWORD create-job nodejs-venue-server-deployment-job < /tmp/venue-server-job-config.xml || { echo "Failed to create Jenkins venue server job"; exit 1; }
             echo "Jenkins venue server job created successfully."
 
+            # Write the base64-encoded Groovy script to a file
+            echo '${createUserGroovyScript}' > /tmp/create-user.groovy
+            echo "Fetching Jenkins password from Secret Manager: ${jenkinsSecretId}"
+            JENKINS_PASSWORD=$(gcloud secrets versions access latest --secret="${jenkinsSecretId}")
+            sed -i 's|__NEW_PASSWORD__|'"$JENKINS_PASSWORD"'|g' /tmp/create-user.groovy
+            
+            # Execute the Groovy script via Jenkins CLI
+            echo "Creating new admin user..."
+            java -jar $JENKINS_CLI -s http://localhost:8080/ -auth admin:$ADMIN_PASSWORD groovy = /tmp/create-user.groovy
+            echo "New admin user created successfully."
+
             # Save the password to a file for later retrieval
             echo $ADMIN_PASSWORD > /var/lib/jenkins/admin-password.txt
             sudo chmod 600 /var/lib/jenkins/admin-password.txt
             echo "Admin password saved to /var/lib/jenkins/admin-password.txt"
+
+            # Restart Jenkins to apply configuration changes
+            sleep 60
+            sudo systemctl restart jenkins
 
             echo "Jenkins setup complete"
         } &>> /var/log/jenkins-install.log

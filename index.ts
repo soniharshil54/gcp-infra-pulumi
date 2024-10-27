@@ -8,6 +8,7 @@ dotenv.config();
 // Ensure the environment variables are set
 const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 const githubToken = process.env.GITHUB_TOKEN;
+const jenkinsPassword = process.env.JENKINS_PASSWORD;
 
 if (!credentialsPath) {
     throw new Error("Missing required environment variable: GOOGLE_APPLICATION_CREDENTIALS");
@@ -15,6 +16,10 @@ if (!credentialsPath) {
 
 if (!githubToken) {
     throw new Error("Missing required environment variable: GITHUB_TOKEN");
+}
+
+if (!jenkinsPassword) {
+    throw new Error("Missing required environment variable: JENKINS_PASSWORD");
 }
 
 console.log(`Stack name: ${STACK_NAME}`);
@@ -27,11 +32,13 @@ import { createBucket } from "./src/storage/bucket";
 import { createJenkinsInstance } from "./src/jenkins/jenkinsInstance";  // Import Jenkins creation function
 // import { createSecurityPolicy } from "./src/network/armor";
 import { createGithubTokenSecret } from "./src/secrets/githubSecret";
+import { createJenkinsSecret } from "./src/secrets/jenkinsSecret";
 
 const resourceName = (baseName: string) => `${GCP_CONFIG.PROJECT}-${STACK_NAME}-${baseName}`;
 
 // Create the GitHub token secret in Secret Manager
 const githubSecretName = createGithubTokenSecret(resourceName("github-token"), githubToken, GCP_CONFIG.REGION);
+const jenkkinsSecretName = createJenkinsSecret(resourceName("jenkins-password"), jenkinsPassword, GCP_CONFIG.REGION);
 
 // Create Firewall Rules
 const allowHttpFirewall = createAllowHttpFirewallRule(resourceName("allow-http"));

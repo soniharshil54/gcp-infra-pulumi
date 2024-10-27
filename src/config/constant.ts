@@ -27,6 +27,7 @@ interface VenueServerConfig {
 const gcpConfig = new pulumi.Config("gcp");
 const centralServerConfig = new pulumi.Config("centralServer");
 const venueServerConfig = new pulumi.Config("venueServer");
+const jenkinsConfig = new pulumi.Config("jenkins");
 
 /** GCP Configuration */
 export const GCP_CONFIG: GcpConfig = {
@@ -52,6 +53,10 @@ export const VENUE_SERVER: VenueServerConfig = {
     REPO_NAME: venueServerConfig.require("githubRepoName"),
     BRANCH: venueServerConfig.require("githubBranch"),
   },
+};
+
+export const JENKINS_CONFIG = {
+  USERNAME: jenkinsConfig.require("username"),
 };
 
 export const STACK_NAME = pulumi.getStack();
