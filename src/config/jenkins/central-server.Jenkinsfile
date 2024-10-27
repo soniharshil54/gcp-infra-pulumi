@@ -3,17 +3,17 @@ pipeline {
 
     environment {
         // Use default values if parameters are not provided
-        PROJECT = 'gotham-433513'
-        REGION = 'us-central1'
-        INSTANCE_GROUP_NAME = 'gotham-433513-dev-instance-group'
+        PROJECT = '__GCP_PROJECT__'
+        REGION = '__GCP_REGION__'
+        INSTANCE_GROUP_NAME = '__INSTANCE_GROUP_NAME__'
     }
 
     stages {
         stage('Checkout Source') {
             steps {
                 git(
-                    url: 'https://github.com/soniharshil54/get-client-ip-node-private.git',
-                    branch: 'main',
+                    url: '__CENTRAL_SERVER_GITHUB_REPO_URL__',
+                    branch: '__CENTRAL_SERVER_GITHUB_BRANCH__',
                     credentialsId: 'github-token-v1'
                 )
             }

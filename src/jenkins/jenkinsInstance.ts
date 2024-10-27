@@ -21,9 +21,16 @@ const githubCredentialsConfig = fs.readFileSync(githubCredentialsConfigPath, "ut
 const createUserGroovyScriptPath = path.join(__dirname, "../config/jenkins/create-user.groovy");
 let createUserGroovyScript = fs.readFileSync(createUserGroovyScriptPath, "utf-8");
 
+const INSTANCE_GROUP_NAME = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-instance-group`
 const centralServerJenkinsfilePath = path.join(__dirname, "../config/jenkins/central-server.Jenkinsfile");
-const centralServerJenkinsfileContent = escapeXml(fs.readFileSync(centralServerJenkinsfilePath, "utf-8"));
+let centralServerJenkinsfileContent = escapeXml(fs.readFileSync(centralServerJenkinsfilePath, "utf-8"));
+centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__CENTRAL_SERVER_GITHUB_REPO_URL__/g, CENTRAL_SERVER.GITHUB.REPO_URL);
+centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__CENTRAL_SERVER_GITHUB_BRANCH__/g, CENTRAL_SERVER.GITHUB.BRANCH);
+centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__GCP_PROJECT__/g, GCP_CONFIG.PROJECT);
+centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__GCP_REGION__/g, GCP_CONFIG.REGION);
+centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__INSTANCE_GROUP_NAME__/g, INSTANCE_GROUP_NAME);
 centralServerJobConfig = centralServerJobConfig.replace(/__JENKINSFILE_CONTENT__/g, centralServerJenkinsfileContent);
+centralServerJobConfig = centralServerJobConfig.replace(/__CENTRAL_SERVER_GITHUB_REPO_BRANCH__/g, CENTRAL_SERVER.GITHUB.BRANCH);
 
 // Define the new Jenkins username
 const newJenkinsUsername = JENKINS_CONFIG.USERNAME;
@@ -266,7 +273,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             /tmp/setup-github-webhook.sh "$CENTRAL_SERVER_REPO" "$GITHUB_TOKEN" "$WEBHOOK_URL"
             /tmp/setup-github-webhook.sh "$VENUE_SERVER_REPO" "$GITHUB_TOKEN" "$WEBHOOK_URL"
 
-            # Restart Jenkins to apply configuration changes
+            # Restart Jenkins to apply changes
             sleep 60
             sudo systemctl restart jenkins
 
