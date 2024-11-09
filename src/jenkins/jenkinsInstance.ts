@@ -21,6 +21,9 @@ const githubCredentialsConfig = fs.readFileSync(githubCredentialsConfigPath, "ut
 const createUserGroovyScriptPath = path.join(__dirname, "../config/jenkins/create-user.groovy");
 let createUserGroovyScript = fs.readFileSync(createUserGroovyScriptPath, "utf-8");
 
+const skipWizardGroovyScriptPath = path.join(__dirname, "../config/jenkins/skip-wizard.groovy");
+let skipWizardGroovyScript = fs.readFileSync(skipWizardGroovyScriptPath, "utf-8");
+
 const INSTANCE_GROUP_NAME = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-instance-group`
 const centralServerJenkinsfilePath = path.join(__dirname, "../config/jenkins/central-server.Jenkinsfile");
 let centralServerJenkinsfileContent = escapeXml(fs.readFileSync(centralServerJenkinsfilePath, "utf-8"));
@@ -151,6 +154,31 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             sudo apt-get install -y openjdk-17-jdk jq jenkins
             echo "Packages installed."
 
+            # Ensure Jenkins home directory exists and is owned by Jenkins
+            sudo mkdir -p /var/lib/jenkins
+            sudo chown -R jenkins:jenkins /var/lib/jenkins
+
+            # Create Groovy script to disable the setup wizard
+            echo "Creating Groovy script to disable the setup wizard..."
+            echo '${skipWizardGroovyScript}' > /tmp/skip-wizard.groovy
+            sudo mkdir -p /var/lib/jenkins/init.groovy.d
+            sudo cp /tmp/skip-wizard.groovy /var/lib/jenkins/init.groovy.d/skip-wizard.groovy
+            sudo chown -R jenkins:jenkins /var/lib/jenkins/init.groovy.d
+
+            # Prepare the user creation Groovy script
+            echo '${createUserGroovyScript}' > /tmp/create-user.groovy
+            echo "Fetching Jenkins password from Secret Manager: ${jenkinsSecretId}"
+            JENKINS_PASSWORD=$(gcloud secrets versions access latest --secret="${jenkinsSecretId}")
+            sed -i 's|__NEW_PASSWORD__|'"$JENKINS_PASSWORD"'|g' /tmp/create-user.groovy
+
+            # Replace __NEW_USERNAME__ placeholder
+            NEW_JENKINS_USERNAME="${newJenkinsUsername}"
+            sed -i 's|__NEW_USERNAME__|'"$NEW_JENKINS_USERNAME"'|g' /tmp/create-user.groovy
+
+            # Move the script to init.groovy.d
+            sudo cp /tmp/create-user.groovy /var/lib/jenkins/init.groovy.d/create-user.groovy
+            sudo chown jenkins:jenkins /var/lib/jenkins/init.groovy.d/create-user.groovy
+
             # Start Jenkins service
             echo "Starting Jenkins service..."
             sudo systemctl start jenkins
@@ -188,35 +216,35 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
 
             sleep 60
 
-            # Retry logic for plugin installation
-            install_plugin() {
-                local plugin_name=$1
-                local retries=5
-                while [ $retries -gt 0 ]; do
-                    echo "Installing plugin: $plugin_name..."
-                    java -jar $JENKINS_CLI -s http://localhost:8080/ -auth admin:$ADMIN_PASSWORD install-plugin $plugin_name -restart && break
-                    retries=$((retries - 1))
-                    echo "Retrying plugin installation: $plugin_name..."
-                    sleep 30
-                done
-                if [ $retries -eq 0 ]; then
-                    echo "Failed to install $plugin_name after multiple attempts."
-                    exit 1
-                fi
-                echo "Plugin $plugin_name installed successfully."
-            }
+            plugins_to_install="cloudbees-folder antisamy-markup-formatter build-timeout credentials credentials-binding timestamper ws-cleanup ant gradle workflow-aggregator github-branch-source pipeline-github-lib pipeline-graph-view git github ssh-slaves matrix-auth pam-auth ldap email-ext mailer dark-theme workflow-job"
+            echo "Installing suggested plugins: $plugins_to_install"
+            retries=5
+            while [ $retries -gt 0 ]; do
+                echo "Installing suggested plugins..."
+                java -jar $JENKINS_CLI -s http://localhost:8080/ -auth admin:$ADMIN_PASSWORD install-plugin $plugins_to_install && break
+                retries=$((retries - 1))
+                echo "Retrying plugin installation..."
+                sleep 10
+            done
 
-            # Install necessary plugins with retries
-            echo "Installing necessary plugins..."
-            install_plugin "workflow-job"
-            install_plugin "git"
-            install_plugin "github"
-            install_plugin "github-branch-source"
-            echo "All necessary plugins installed."
+            if [ $retries -eq 0 ]; then
+                echo "Failed to install plugins after multiple attempts."
+                exit 1
+            fi
 
-            # Wait for Jenkins to restart after plugin installation
-            echo "Waiting for Jenkins to restart after plugin installation..."
             sleep 60
+
+            # Restart Jenkins to apply plugin installations
+            echo "Restarting Jenkins to apply plugin installations..."
+            sudo systemctl restart jenkins
+            echo "Jenkins restarted."
+
+            # Wait for Jenkins to be ready again
+            echo "Waiting for Jenkins to be ready after restart..."
+            while ! curl -sSf http://localhost:8080/login > /dev/null; do
+                sleep 10
+            done
+            echo "Jenkins is ready after restart."
 
             # Verify that Jenkins is back up
             while ! curl -s http://localhost:8080 >/dev/null; do
@@ -224,6 +252,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
                 sleep 60
             done
             echo "Jenkins is up after plugin installation."
+            sleep 30
 
             # Define the GitHub credentials ID
             GITHUB_CREDENTIALS_ID="github-token-v1"
