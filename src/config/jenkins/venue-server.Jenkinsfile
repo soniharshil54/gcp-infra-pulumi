@@ -20,13 +20,11 @@ pipeline {
             }
         }
 
-        stage('Generate Version Tag') {
+        stage('Read Version Tag') {
             steps {
                 script {
-                    COMMIT_HASH = sh(script: "git rev-parse --short=10 HEAD", returnStdout: true).trim()
-                    DATE_TAG = sh(script: "date +%d%m%Y", returnStdout: true).trim()
-                    VERSION_TAG = "${DATE_TAG}-${COMMIT_HASH}"
-                    echo "Generated VERSION_TAG: ${VERSION_TAG}"
+                    VERSION_TAG = readFile('VERSION').trim()
+                    echo "Read VERSION_TAG: ${VERSION_TAG}"
                 }
             }
         }
