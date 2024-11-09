@@ -29,6 +29,7 @@ centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__CEN
 centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__GCP_PROJECT__/g, GCP_CONFIG.PROJECT);
 centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__GCP_REGION__/g, GCP_CONFIG.REGION);
 centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__INSTANCE_GROUP_NAME__/g, INSTANCE_GROUP_NAME);
+centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__ENVIRONMENT__/g, STACK_NAME);
 centralServerJobConfig = centralServerJobConfig.replace(/__CENTRAL_SERVER_JENKINSFILE_CONTENT__/g, centralServerJenkinsfileContent);
 centralServerJobConfig = centralServerJobConfig.replace(/__CENTRAL_SERVER_GITHUB_REPO_BRANCH__/g, CENTRAL_SERVER.GITHUB.BRANCH);
 
@@ -44,6 +45,7 @@ venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_A
 venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_SERVICE_NAME__/g, venueServiceContainerService);
 venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_PROD_GITHUB_REPO_URL__/g, VENUE_SERVER.PROD_GITHUB.REPO_URL);
 venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_PROD_GITHUB_BRANCH__/g, VENUE_SERVER.PROD_GITHUB.BRANCH);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__ENVIRONMENT__/g, STACK_NAME);
 venueServerJobConfig = venueServerJobConfig.replace(/__VENUE_SERVER_JENKINSFILE_CONTENT__/g, venueServerJenkinsfileContent);
 venueServerJobConfig = venueServerJobConfig.replace(/__VENUE_SERVER_GITHUB_REPO_BRANCH__/g, VENUE_SERVER.GITHUB.BRANCH);
 

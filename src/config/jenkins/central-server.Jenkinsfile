@@ -6,6 +6,7 @@ pipeline {
         PROJECT = '__GCP_PROJECT__'
         REGION = '__GCP_REGION__'
         INSTANCE_GROUP_NAME = '__INSTANCE_GROUP_NAME__'
+        ENVIRONMENT = '__ENVIRONMENT__'
     }
 
     stages {
@@ -18,6 +19,19 @@ pipeline {
                 )
             }
         }
+
+        stage('Approval') {
+            when {
+                expression { env.ENVIRONMENT == 'prod' }
+            }
+            steps {
+                script {
+                    input message: 'Approve to proceed with the production deployment ?', 
+                          ok: 'Approve'
+                }
+            }
+        }
+
         stage('Update Instances') {
             steps {
                 script {

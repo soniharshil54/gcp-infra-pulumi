@@ -9,6 +9,7 @@ pipeline {
         TAG = 'latest'
         PROD_REPO_URL = '__VENUE_SERVER_PROD_GITHUB_REPO_URL__'
         PROD_REPO_BRANCH = '__VENUE_SERVER_PROD_GITHUB_BRANCH__'
+        ENVIRONMENT = '__ENVIRONMENT__'
     }
 
     stages {
@@ -19,6 +20,18 @@ pipeline {
                     branch: '__VENUE_SERVER_GITHUB_BRANCH__',
                     credentialsId: 'github-token-v1'
                 )
+            }
+        }
+
+        stage('Approval') {
+            when {
+                expression { env.ENVIRONMENT == 'prod' }
+            }
+            steps {
+                script {
+                    input message: 'Approve to proceed with the production deployment ?', 
+                          ok: 'Approve'
+                }
             }
         }
 
