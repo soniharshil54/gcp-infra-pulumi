@@ -13,7 +13,7 @@ const centralServerJobConfigPath = path.join(__dirname, "../config/jenkins/centr
 const venueServerJobConfigPath = path.join(__dirname, "../config/jenkins/venue-server-job-config.xml");
 
 let centralServerJobConfig = fs.readFileSync(centralServerJobConfigPath, "utf-8");
-const venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
+let venueServerJobConfig = fs.readFileSync(venueServerJobConfigPath, "utf-8");
 
 const githubCredentialsConfigPath = path.join(__dirname, "../config/jenkins/github-credentials.xml");
 const githubCredentialsConfig = fs.readFileSync(githubCredentialsConfigPath, "utf-8");
@@ -29,8 +29,21 @@ centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__CEN
 centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__GCP_PROJECT__/g, GCP_CONFIG.PROJECT);
 centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__GCP_REGION__/g, GCP_CONFIG.REGION);
 centralServerJenkinsfileContent = centralServerJenkinsfileContent.replace(/__INSTANCE_GROUP_NAME__/g, INSTANCE_GROUP_NAME);
-centralServerJobConfig = centralServerJobConfig.replace(/__JENKINSFILE_CONTENT__/g, centralServerJenkinsfileContent);
+centralServerJobConfig = centralServerJobConfig.replace(/__CENTRAL_SERVER_JENKINSFILE_CONTENT__/g, centralServerJenkinsfileContent);
 centralServerJobConfig = centralServerJobConfig.replace(/__CENTRAL_SERVER_GITHUB_REPO_BRANCH__/g, CENTRAL_SERVER.GITHUB.BRANCH);
+
+const VENUE_ARTIFACT_REPOSITORY_NAME = `${GCP_CONFIG.PROJECT}-${STACK_NAME}-venue-artifact-registry`;
+const venueServerJenkinsfilePath = path.join(__dirname, "../config/jenkins/venue-server.Jenkinsfile");
+const venueServiceContainerService = `${GCP_CONFIG.PROJECT}-venue-api-service`;
+let venueServerJenkinsfileContent = escapeXml(fs.readFileSync(venueServerJenkinsfilePath, "utf-8"));
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_GITHUB_REPO_URL__/g, VENUE_SERVER.GITHUB.REPO_URL);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_GITHUB_BRANCH__/g, VENUE_SERVER.GITHUB.BRANCH);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__GCP_PROJECT__/g, GCP_CONFIG.PROJECT);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__GCP_REGION__/g, GCP_CONFIG.REGION);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_ARTIFACT_REGISTRY_NAME__/g, VENUE_ARTIFACT_REPOSITORY_NAME);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_SERVICE_NAME__/g, venueServiceContainerService);
+venueServerJobConfig = venueServerJobConfig.replace(/__VENUE_SERVER_JENKINSFILE_CONTENT__/g, venueServerJenkinsfileContent);
+venueServerJobConfig = venueServerJobConfig.replace(/__VENUE_SERVER_GITHUB_REPO_BRANCH__/g, VENUE_SERVER.GITHUB.BRANCH);
 
 // Define the new Jenkins username
 const newJenkinsUsername = JENKINS_CONFIG.USERNAME;
@@ -62,6 +75,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
         "roles/storage.admin",
         "roles/iam.serviceAccountUser",
         "roles/secretmanager.secretAccessor",
+        "roles/artifactregistry.writer",
     ];
 
     roles.forEach(role => {
@@ -273,7 +287,12 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             /tmp/setup-github-webhook.sh "$CENTRAL_SERVER_REPO" "$GITHUB_TOKEN" "$WEBHOOK_URL"
             /tmp/setup-github-webhook.sh "$VENUE_SERVER_REPO" "$GITHUB_TOKEN" "$WEBHOOK_URL"
 
-            # Restart Jenkins to apply changes
+            # Add the jenkins user to the docker group
+            sudo usermod -aG docker jenkins
+            sudo usermod -aG docker $(whoami)
+            newgrp docker
+
+            # Restart Jenkins to apply configuration changes
             sleep 60
             sudo systemctl restart jenkins
 

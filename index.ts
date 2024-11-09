@@ -33,6 +33,7 @@ import { createJenkinsInstance } from "./src/jenkins/jenkinsInstance";  // Impor
 // import { createSecurityPolicy } from "./src/network/armor";
 import { createGithubTokenSecret } from "./src/secrets/githubSecret";
 import { createJenkinsSecret } from "./src/secrets/jenkinsSecret";
+import { createArtifactRegistry } from "./src/storage/artifactRegistry"
 
 const resourceName = (baseName: string) => `${GCP_CONFIG.PROJECT}-${STACK_NAME}-${baseName}`;
 
@@ -66,6 +67,8 @@ const jenkinsInstance = createJenkinsInstance(resourceName("jenkins-instance"), 
 
 // Create Storage Bucket
 createBucket(resourceName("assets-bucket"));
+
+const venueArtifactRegistry = createArtifactRegistry(resourceName("venue-artifact-registry"), GCP_CONFIG.REGION);
 
 export const instanceGroupName = instanceGroup.name;
 export const instanceTemplateName = instanceTemplate.name;
