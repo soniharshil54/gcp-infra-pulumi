@@ -13,5 +13,7 @@ config:
   venueServer:githubRepoName: phone-spam-authenticate
   venueServer:githubBranch: main
   venueServer:githubRepoOwner: soniharshil54
+  venueServer:prodGithubRepoUrl: https://github.com/soniharshil54/phone-spam-authentication-prod-compose.git
+  venueServer:prodGithubBranch: main
 
   jenkins:username: harshil

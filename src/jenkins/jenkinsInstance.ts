@@ -42,6 +42,8 @@ venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__GCP_PRO
 venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__GCP_REGION__/g, GCP_CONFIG.REGION);
 venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_ARTIFACT_REGISTRY_NAME__/g, VENUE_ARTIFACT_REPOSITORY_NAME);
 venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_SERVICE_NAME__/g, venueServiceContainerService);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_PROD_GITHUB_REPO_URL__/g, VENUE_SERVER.PROD_GITHUB.REPO_URL);
+venueServerJenkinsfileContent = venueServerJenkinsfileContent.replace(/__VENUE_SERVER_PROD_GITHUB_BRANCH__/g, VENUE_SERVER.PROD_GITHUB.BRANCH);
 venueServerJobConfig = venueServerJobConfig.replace(/__VENUE_SERVER_JENKINSFILE_CONTENT__/g, venueServerJenkinsfileContent);
 venueServerJobConfig = venueServerJobConfig.replace(/__VENUE_SERVER_GITHUB_REPO_BRANCH__/g, VENUE_SERVER.GITHUB.BRANCH);
 

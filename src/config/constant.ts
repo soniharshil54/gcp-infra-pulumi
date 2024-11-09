@@ -14,6 +14,11 @@ interface GithubConfig {
   REPO_OWNER?: string;
 }
 
+interface ProdGithubConfig {
+  REPO_URL: string;
+  BRANCH: string;
+}
+
 interface CentralServerConfig {
   GITHUB: GithubConfig;
   NODE_SERVER_PORT: number;
@@ -22,6 +27,7 @@ interface CentralServerConfig {
 
 interface VenueServerConfig {
   GITHUB: GithubConfig;
+  PROD_GITHUB: ProdGithubConfig;
 }
 
 /** Fetching Configurations from Pulumi */
@@ -55,6 +61,10 @@ export const VENUE_SERVER: VenueServerConfig = {
     REPO_NAME: venueServerConfig.require("githubRepoName"),
     BRANCH: venueServerConfig.require("githubBranch"),
     REPO_OWNER: venueServerConfig.require("githubRepoOwner"),
+  },
+  PROD_GITHUB: {
+    REPO_URL: venueServerConfig.require("prodGithubRepoUrl"),
+    BRANCH: venueServerConfig.require("prodGithubBranch"),
   },
 };
 
