@@ -1,0 +1,19 @@
+config:
+  gcp:project: gotham-433513
+  gcp:region: us-central1
+
+  centralServer:githubRepoUrl: https://github.com/soniharshil54/get-client-ip-node-private.git
+  centralServer:githubRepoName: get-client-ip-node-private
+  centralServer:githubBranch: main
+  centralServer:nodeServerPort: "4010"
+  centralServer:healthcheckPath: /v1/healthcheck
+  centralServer:githubRepoOwner: soniharshil54
+
+  venueServer:githubRepoUrl: https://github.com/soniharshil54/phone-spam-authenticate.git
+  venueServer:githubRepoName: phone-spam-authenticate
+  venueServer:githubBranch: main
+  venueServer:githubRepoOwner: soniharshil54
+  venueServer:prodGithubRepoUrl: https://github.com/soniharshil54/phone-spam-authentication-prod-compose.git
+  venueServer:prodGithubBranch: main
+
+  jenkins:username: harshil

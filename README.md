@@ -62,6 +62,14 @@ Deploy the stack:
 
 ``pulumi up``
 
+To deploy for different stages, use --stack flag specifying the stack name you want to deploy
+
+``pulumi up --stack dev``
+``pulumi up --stack prod``
+``pulumi up --stack staging``
+
+Note: Make sure you have Pulumi file configured for each stack to deploy infra for the stack (eg., Pulumi.dev.yaml orPulumi.prod.yaml ).
+
 ### Destroy the Stack
 
 To destroy the stack and all associated resources, run:
