@@ -104,20 +104,26 @@ pipeline {
                         git config user.name "Jenkins CI"
                         git config user.email "jenkins@example.com"
                         git add docker-compose.prod.yaml
-                        git commit -m "Update Docker Compose image to ${VERSION_TAG}"
+                        
+                        # Check for changes and commit if there are any
+                        if ! git diff-index --quiet HEAD; then
+                            git commit -m "Update Docker Compose image to ${VERSION_TAG}"
 
-                        # Set up GIT_ASKPASS for secure token-based push
-                        export GIT_ASKPASS=\$(mktemp)
-                        echo "echo \${GIT_TOKEN}" > \${GIT_ASKPASS}
-                        chmod +x \${GIT_ASKPASS}
+                            # Set up GIT_ASKPASS for secure token-based push
+                            export GIT_ASKPASS=\$(mktemp)
+                            echo "echo \${GIT_TOKEN}" > \${GIT_ASKPASS}
+                            chmod +x \${GIT_ASKPASS}
 
-                        # Push the commit and tag
-                        git push origin ${PROD_REPO_BRANCH}
-                        git tag ${VERSION_TAG}
-                        git push origin ${VERSION_TAG}
+                            # Push the commit to the branch and update the tag
+                            git push origin ${PROD_REPO_BRANCH}
+                            git tag -f ${VERSION_TAG}
+                            git push -f origin ${VERSION_TAG}
 
-                        # Clean up GIT_ASKPASS
-                        rm -f \${GIT_ASKPASS}
+                            # Clean up GIT_ASKPASS
+                            rm -f \${GIT_ASKPASS}
+                        else
+                            echo "No changes detected in docker-compose.prod.yaml, skipping commit and push."
+                        fi
                         """
                     }
                 }

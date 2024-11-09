@@ -266,7 +266,7 @@ export function createJenkinsInstance(name: string, zone: string): gcp.compute.I
             
             # Execute the Groovy script via Jenkins CLI
             echo "Creating new admin user..."
-            java -jar $JENKINS_CLI -s http://localhost:8080/ -auth admin:$ADMIN_PASSWORD groovy = /tmp/create-user.groovy
+            java -jar $JENKINS_CLI -s http://localhost:8080/ -auth admin:$ADMIN_PASSWORD groovy = < /tmp/create-user.groovy
             echo "New admin user created successfully."
 
             # Save the password to a file for later retrieval
